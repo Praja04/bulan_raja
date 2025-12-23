@@ -31,6 +31,12 @@ export default function WeddingInvitation() {
   const [guestName, setGuestName] = useState("Bapak/Ibu/Saudara/i");
   const videoRef = useRef(null);
 
+  // Deteksi apakah device adalah iOS
+  const isIOS = () => {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  };
+
   // Ambil nama tamu dari URL parameter
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -62,7 +68,27 @@ export default function WeddingInvitation() {
     }, TIMING.TOTAL_TO_VIDEO);
   };
 
-  // Play video dengan audio setelah user klik tombol play
+  // Auto-play video untuk Android, manual untuk iOS
+  useEffect(() => {
+    if (stage === 'video' && videoRef.current && !isIOS()) {
+      // Android: Auto play dengan audio
+      const playVideo = async () => {
+        try {
+          videoRef.current.muted = false;
+          await videoRef.current.play();
+          setVideoReady(true);
+        } catch (error) {
+          console.log('Autoplay failed, fallback to muted:', error);
+          videoRef.current.muted = true;
+          await videoRef.current.play();
+          setVideoReady(true);
+        }
+      };
+      playVideo();
+    }
+  }, [stage]);
+
+  // Play video dengan audio setelah user klik tombol play (untuk iOS)
   const handlePlayVideo = async () => {
     if (videoRef.current) {
       try {
@@ -405,8 +431,8 @@ export default function WeddingInvitation() {
                           <source src="/bulan_raja.mp4" type="video/mp4" />
                         </video>
 
-                        {/* Play Button Overlay - hanya muncul di awal */}
-                        {!videoReady && (
+                        {/* Play Button Overlay - hanya muncul di iOS */}
+                        {!videoReady && isIOS() && (
                           <div 
                             className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 backdrop-blur-sm cursor-pointer z-20"
                             onClick={handlePlayVideo}
