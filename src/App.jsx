@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Heart, MapPin, Calendar, Clock } from 'lucide-react';
 
 // ==========================================
@@ -23,32 +23,60 @@ const TIMING = {
 };
 
 export default function WeddingInvitation() {
-  const [stage, setStage] = useState('envelope'); // envelope, names, video, invitation
+  const [stage, setStage] = useState('envelope'); // envelope, welcome, video, invitation
   const [envelopeOpen, setEnvelopeOpen] = useState(false);
-  const [showNames, setShowNames] = useState(false);
-  const [namesExiting, setNamesExiting] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [welcomeExiting, setWelcomeExiting] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
+  const [guestName, setGuestName] = useState("Bapak/Ibu/Saudara/i");
   const videoRef = useRef(null);
 
+  // Ambil nama tamu dari URL parameter
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const nameFromUrl = params.get('name');
+    if (nameFromUrl) {
+      setGuestName(nameFromUrl);
+    }
+  }, []);
+  
   const handleEnvelopeClick = () => {
     setEnvelopeOpen(true);
     
-    // Setelah amplop fade, tampilkan nama
+    // Setelah amplop fade, tampilkan welcome
     setTimeout(() => {
-      setStage('names');
+      setStage('welcome');
       setTimeout(() => {
-        setShowNames(true);
+        setShowWelcome(true);
       }, 100);
     }, TIMING.ENVELOPE_FLAP_OPEN + TIMING.ENVELOPE_FADE_OUT);
     
-    // Mulai fade out nama sebelum pindah ke video
+    // Mulai fade out welcome sebelum pindah ke video
     setTimeout(() => {
-      setNamesExiting(true);
+      setWelcomeExiting(true);
     }, TIMING.ENVELOPE_FLAP_OPEN + TIMING.ENVELOPE_FADE_OUT + TIMING.NAMES_DELAY + TIMING.NAMES_FADE_IN + TIMING.NAMES_DISPLAY);
     
-    // Setelah nama exit, pindah ke video
+    // Setelah welcome exit, pindah ke video
     setTimeout(() => {
       setStage('video');
     }, TIMING.TOTAL_TO_VIDEO);
+  };
+
+  // Play video dengan audio setelah user klik tombol play
+  const handlePlayVideo = async () => {
+    if (videoRef.current) {
+      try {
+        videoRef.current.muted = false; // Unmute untuk audio
+        await videoRef.current.play(); // Play dengan audio
+        setVideoReady(true);
+      } catch (error) {
+        console.log('Video play error:', error);
+        // Fallback: play muted jika gagal
+        videoRef.current.muted = true;
+        await videoRef.current.play();
+        setVideoReady(true);
+      }
+    }
   };
 
   const handleVideoEnd = () => {
@@ -93,11 +121,11 @@ export default function WeddingInvitation() {
       {/* Content Container */}
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
         
-        {/* Animated butterflies - ditampilkan dari stage awal sampai akhir, dengan z-index tinggi */}
+        {/* Animated butterflies */}
         {[...Array(8)].map((_, i) => (
           <div
             key={`butterfly-${i}`}
-            className="absolute z-50" // Z-index tinggi agar selalu terlihat
+            className="absolute z-50"
             style={{
               left: i % 2 === 0 ? '-10%' : 'auto',
               right: i % 2 === 1 ? '-10%' : 'auto',
@@ -142,14 +170,14 @@ export default function WeddingInvitation() {
                     }}></div>
                   </div>
 
-                  {/* Corner ornaments - responsive */}
+                  {/* Corner ornaments */}
                   <div className="absolute top-4 left-4 sm:top-8 sm:left-8 w-12 h-12 sm:w-16 sm:h-16 border-t-2 border-l-2 border-amber-300/50 rounded-tl-2xl"></div>
                   <div className="absolute top-4 right-4 sm:top-8 sm:right-8 w-12 h-12 sm:w-16 sm:h-16 border-t-2 border-r-2 border-amber-300/50 rounded-tr-2xl"></div>
                   <div className="absolute bottom-4 left-4 sm:bottom-8 sm:left-8 w-12 h-12 sm:w-16 sm:h-16 border-b-2 border-l-2 border-amber-300/50 rounded-bl-2xl"></div>
                   <div className="absolute bottom-4 right-4 sm:bottom-8 sm:right-8 w-12 h-12 sm:w-16 sm:h-16 border-b-2 border-r-2 border-amber-300/50 rounded-br-2xl"></div>
                 </div>
 
-                {/* Envelope flap - responsive height */}
+                {/* Envelope flap */}
                 <div className="absolute top-0 left-0 w-full h-32 sm:h-48 overflow-hidden pointer-events-none">
                   <div 
                     className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-amber-200/80 via-amber-100/70 to-stone-100/60 origin-top border-l-2 border-r-2 border-t-2 border-amber-300/50"
@@ -167,7 +195,7 @@ export default function WeddingInvitation() {
                   </div>
                 </div>
 
-                {/* Gold wax seal - responsive size and position */}
+                {/* Button "Buka Undangan" */}
                 <div 
                   className="absolute top-28 sm:top-40 left-1/2 transform -translate-x-1/2"
                   style={{
@@ -176,12 +204,12 @@ export default function WeddingInvitation() {
                     transition: `all ${TIMING.SEAL_DISAPPEAR}ms ease-in-out`
                   }}
                 >
-                  <div className="w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 rounded-full shadow-2xl flex items-center justify-center border-2 sm:border-4 border-white group-hover:scale-110 transition-transform duration-300">
-                    <Heart className="w-8 h-8 sm:w-12 sm:h-12 text-white" fill="currentColor" />
-                  </div>
+                  <button className="px-8 py-4 sm:px-10 sm:py-5 bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 rounded-full shadow-2xl flex items-center justify-center border-2 sm:border-4 border-white group-hover:scale-110 transition-transform duration-300 hover:shadow-amber-300/50">
+                    <span className="text-white font-semibold text-base sm:text-lg tracking-wide">Buka Undangan</span>
+                  </button>
                 </div>
 
-                {/* Click instruction - responsive */}
+                {/* Click instruction */}
                 <div 
                   className="absolute -bottom-12 sm:-bottom-20 left-0 right-0 text-center"
                   style={{
@@ -189,21 +217,21 @@ export default function WeddingInvitation() {
                     transition: 'opacity 300ms'
                   }}
                 >
-                  <p className="text-amber-700 text-sm sm:text-base font-light tracking-widest animate-pulse">Click to Open</p>
+                  <p className="text-amber-700 text-sm sm:text-base font-light tracking-widest animate-pulse">Klik untuk Membuka</p>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* ==================== NAMES STAGE ==================== */}
-        {stage === 'names' && (
+        {/* ==================== WELCOME STAGE ==================== */}
+        {stage === 'welcome' && (
           <div 
             className="fixed inset-0 flex items-center justify-center z-30"
             style={{
-              opacity: showNames && !namesExiting ? 1 : 0,
-              transform: showNames && !namesExiting ? 'scale(1)' : 'scale(0.95)',
-              transition: namesExiting 
+              opacity: showWelcome && !welcomeExiting ? 1 : 0,
+              transform: showWelcome && !welcomeExiting ? 'scale(1)' : 'scale(0.95)',
+              transition: welcomeExiting 
                 ? `all ${TIMING.NAMES_FADE_OUT}ms ease-in` 
                 : `all ${TIMING.NAMES_FADE_IN}ms ease-out`
             }}
@@ -211,14 +239,14 @@ export default function WeddingInvitation() {
             {/* Animated particles background */}
             {[...Array(15)].map((_, i) => (
               <div
-                key={`name-particle-${i}`}
+                key={`welcome-particle-${i}`}
                 className="absolute animate-float-slow"
                 style={{
                   left: `${10 + Math.random() * 80}%`,
                   top: `${10 + Math.random() * 80}%`,
                   animationDelay: `${i * 0.2}s`,
                   animationDuration: `${3 + Math.random() * 2}s`,
-                  opacity: showNames && !namesExiting ? 0.6 : 0,
+                  opacity: showWelcome && !welcomeExiting ? 0.6 : 0,
                   transition: `opacity ${TIMING.NAMES_FADE_IN}ms ease-out`
                 }}
               >
@@ -226,58 +254,75 @@ export default function WeddingInvitation() {
               </div>
             ))}
 
-            <div className="text-center px-8 relative z-10">
+            <div className="text-center px-8 relative z-10 max-w-2xl">
               <p 
-                className="text-amber-700 text-sm tracking-[0.4em] mb-6 font-light"
+                className="text-amber-700 text-sm tracking-[0.3em] mb-6 font-light"
                 style={{
-                  opacity: showNames && !namesExiting ? 1 : 0,
-                  transform: showNames && !namesExiting ? 'translateY(0)' : 'translateY(20px)',
+                  opacity: showWelcome && !welcomeExiting ? 1 : 0,
+                  transform: showWelcome && !welcomeExiting ? 'translateY(0)' : 'translateY(20px)',
                   transition: `all ${TIMING.NAMES_FADE_IN}ms ease-out 200ms`
                 }}
               >
-                THE WEDDING OF
+                UNDANGAN PERNIKAHAN
               </p>
               
               <h2 
-                className="text-7xl md:text-8xl font-serif text-amber-800 mb-3" 
+                className="text-4xl md:text-5xl font-serif text-amber-800 mb-6 leading-relaxed" 
                 style={{
                   fontFamily: "'Playfair Display', serif",
-                  opacity: showNames && !namesExiting ? 1 : 0,
-                  transform: showNames && !namesExiting ? 'translateY(0)' : 'translateY(30px)',
+                  opacity: showWelcome && !welcomeExiting ? 1 : 0,
+                  transform: showWelcome && !welcomeExiting ? 'translateY(0)' : 'translateY(30px)',
                   transition: `all ${TIMING.NAMES_FADE_IN}ms ease-out 400ms`
                 }}
               >
-                Raja
+                Kepada Yth.
               </h2>
               
-              <Heart 
-                className="w-12 h-12 text-rose-400 mx-auto my-6 animate-pulse" 
-                fill="currentColor"
+              <div 
+                className="my-8"
                 style={{
-                  opacity: showNames && !namesExiting ? 1 : 0,
-                  transform: showNames && !namesExiting ? 'scale(1)' : 'scale(0.5)',
+                  opacity: showWelcome && !welcomeExiting ? 1 : 0,
+                  transform: showWelcome && !welcomeExiting ? 'scale(1)' : 'scale(0.5)',
                   transition: `all ${TIMING.NAMES_FADE_IN}ms ease-out 600ms`
                 }}
-              />
+              >
+                <div className="flex items-center justify-center gap-4">
+                  <div className="h-px w-20 bg-gradient-to-r from-transparent to-amber-300"></div>
+                  <span className="text-2xl md:text-3xl font-serif text-amber-700 px-4">{guestName}</span>
+                  <div className="h-px w-20 bg-gradient-to-l from-transparent to-amber-300"></div>
+                </div>
+              </div>
               
-              <h2 
-                className="text-7xl md:text-8xl font-serif text-amber-800 mb-8" 
+              <p 
+                className="text-stone-600 text-lg md:text-xl leading-relaxed mb-6" 
                 style={{
-                  fontFamily: "'Playfair Display', serif",
-                  opacity: showNames && !namesExiting ? 1 : 0,
-                  transform: showNames && !namesExiting ? 'translateY(0)' : 'translateY(30px)',
+                  opacity: showWelcome && !welcomeExiting ? 1 : 0,
+                  transform: showWelcome && !welcomeExiting ? 'translateY(0)' : 'translateY(30px)',
                   transition: `all ${TIMING.NAMES_FADE_IN}ms ease-out 800ms`
                 }}
               >
-                Bulan
-              </h2>
+                Tanpa mengurangi rasa hormat, kami mengundang<br/>
+                Bapak/Ibu/Saudara/i untuk menghadiri acara pernikahan kami
+              </p>
 
               <p 
-                className="text-stone-600 text-xl tracking-widest"
+                className="text-amber-800 text-3xl md:text-4xl font-serif mb-3"
                 style={{
-                  opacity: showNames && !namesExiting ? 1 : 0,
-                  transform: showNames && !namesExiting ? 'translateY(0)' : 'translateY(20px)',
+                  fontFamily: "'Playfair Display', serif",
+                  opacity: showWelcome && !welcomeExiting ? 1 : 0,
+                  transform: showWelcome && !welcomeExiting ? 'translateY(0)' : 'translateY(20px)',
                   transition: `all ${TIMING.NAMES_FADE_IN}ms ease-out 1000ms`
+                }}
+              >
+                Raja & Bulan
+              </p>
+
+              <p 
+                className="text-stone-600 text-lg tracking-widest"
+                style={{
+                  opacity: showWelcome && !welcomeExiting ? 1 : 0,
+                  transform: showWelcome && !welcomeExiting ? 'translateY(0)' : 'translateY(20px)',
+                  transition: `all ${TIMING.NAMES_FADE_IN}ms ease-out 1200ms`
                 }}
               >
                 04 Januari 2026
@@ -292,7 +337,7 @@ export default function WeddingInvitation() {
             className="fixed inset-0 z-20"
             style={{
               opacity: stage === 'video' ? 1 : 0,
-              transition: 'opacity 1500ms ease-in-out' // Diubah ke 1.5 detik untuk fade in
+              transition: 'opacity 1500ms ease-in-out'
             }}
           >
             {/* Background layer */}
@@ -340,24 +385,42 @@ export default function WeddingInvitation() {
                   <div className="absolute top-0 left-0 right-0 h-10 md:h-12 bg-gradient-to-b from-amber-50/80 to-transparent z-10">
                     <div className="flex items-center justify-center h-full">
                       <div className="flex items-center gap-2 md:gap-3">
-                                             <div className="h-px w-6 md:w-10 bg-gradient-to-l from-transparent to-amber-400"></div>
+                        <div className="h-px w-6 md:w-10 bg-gradient-to-l from-transparent to-amber-400"></div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Video container - Portrait ratio (9:16 / vertikal) */}
+                  {/* Video container - Portrait ratio (9:16) */}
                   <div className="relative p-3 md:p-4">
                     <div className="relative w-full aspect-[9/16] max-h-[75vh]">
                       <div className="w-full h-full rounded-lg md:rounded-xl overflow-hidden shadow-inner bg-stone-100">
                         <video 
                           ref={videoRef}
                           className="w-full h-full object-cover"
-                          autoPlay
+                          muted
                           playsInline
+                          webkit-playsinline="true"
                           onEnded={handleVideoEnd}
                         >
                           <source src="/bulan_raja.mp4" type="video/mp4" />
                         </video>
+
+                        {/* Play Button Overlay - hanya muncul di awal */}
+                        {!videoReady && (
+                          <div 
+                            className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 backdrop-blur-sm cursor-pointer z-20"
+                            onClick={handlePlayVideo}
+                          >
+                            <div className="bg-white/95 rounded-full p-6 md:p-8 shadow-2xl hover:scale-110 transition-transform duration-300 border-4 border-amber-400 mb-6">
+                              <svg className="w-12 h-12 md:w-16 md:h-16 text-amber-600" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z"/>
+                              </svg>
+                            </div>
+                            <p className="text-white text-base md:text-lg font-medium tracking-wide animate-pulse px-4 text-center">
+                              Tap untuk memutar video
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -373,7 +436,7 @@ export default function WeddingInvitation() {
                     </div>
                   </div>
 
-                  {/* Side ornaments - smaller for portrait */}
+                  {/* Side ornaments */}
                   <div className="absolute left-2 md:left-3 top-1/2 -translate-y-1/2 hidden sm:block">
                     <div className="flex flex-col gap-2 opacity-30">
                       {[...Array(7)].map((_, i) => (
@@ -548,40 +611,8 @@ export default function WeddingInvitation() {
           }
         }
 
-        @keyframes sway {
-          0%, 100% {
-            transform: rotate(-5deg);
-          }
-          50% {
-            transform: rotate(5deg);
-          }
-        }
-
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
         .animate-float-slow {
           animation: float-slow 20s ease-in-out infinite;
-        }
-
-        .animate-sway {
-          animation: sway 4s ease-in-out infinite;
-        }
-
-        .animate-fade-in {
-          animation: fade-in 0.8s ease-out forwards;
-        }
-
-        .bg-gradient-radial {
-          background: radial-gradient(circle, var(--tw-gradient-stops));
         }
       `}</style>
     </div>
